@@ -57,7 +57,14 @@ class User_Action():
         #Return new table
         return t
 
-class Data_split():
+class Data():
+
+    def extend_x(self,table_x):
+        new_table_x = []
+        for table in table_x:
+            new_table = np.hstack([table,1])
+            new_table_x.append(new_table)
+        return new_table_x
 
     def return_xtrain(self,table_x):
         #Init arrat
@@ -84,43 +91,84 @@ class Data_split():
         return xtest
 
     def return_ttrain(self,table_t):
-        pass
+        #Init arrat
+        ttrain = []
+        #Loop 3 times
+        for i in range(3):
+            #Init the steps
+            start = 50 * i
+            end = 50 * (i + 1) - 10
+            #Extend the array
+            ttrain.extend(table_t[start:end])
+        return ttrain
 
     def return_ttest(self,table_t):
-        pass
+        #Init array 
+        ttest = []
+        #Loop 3 times
+        for i in range(3):
+            #Init steps
+            start = (i + 1) * 50 - 10
+            end = start + 10
+            #Extend array
+            ttest.extend(table_t[start:end])
+        return ttest
+
+class Menu():
+
+    def attribute_menu(self,a,table_t,data):
+        while True:
+            print('1. Seperation of Iris-Setosa\n2. Seperation of Iris-Virginica\n3. Seperation of Iris-Versicolor ')
+            opt = int(input('Chosse from 1 to 3: '))
+            if opt == 1:
+                new_table_t = a.option_1(table_t,data)
+                return new_table_t
+            elif opt == 2:
+                new_table_t = a.option_2(table_t,data)
+                return new_table_t
+            elif opt == 3:
+                new_table_t = a.option_3(table_t,data)
+                return new_table_t
+            else:
+                print('Invalid option.Please give another one\n')
 
 def load_data():
+    #Get irish data
     url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data' # url of data
     data = pd.read_csv(url,header=None) # load data
     return data.values # return data
 
 if __name__ == '__main__':
+
     data = load_data() # load data
+
     number_of_patterns, number_of_attributes = data.shape # get the rows and columns
     print(f'Number of patters: {number_of_patterns}\nNumber of attributes: {number_of_attributes}') # print row and columns
 
+    #Initialize classes
     p = Plots()
-    d = Data_split()
+    d = Data()
     a = User_Action()
+    m = Menu()
 
+    #Init table x
     table_x = data[:, [0,1,2,3]] # keep only columns 1 2 and 3 from dataset
 
+    #Print basic plot
     p.plot_data(data) # print plot of all data
 
+    #Init table t
     table_t = np.zeros(number_of_patterns) # fill array with zeros
 
-    ans = 'y'
-    while ans == 'y':
-        print('1. Seperation of Iris-Setosa\n2. Seperation of Iris-Virginica\n3. Seperation of Iris-Versicolor ')
-        opt = int(input('Chosse from 1 to 3: '))
-        if opt == 1:
-            new_table_t = a.option_1(table_t,data)
-        elif opt == 2:
-            new_table_t = a.option_2(table_t,data)
-        elif opt == 3:
-            new_table_t = a.option_3(table_t,data)
-        else:
-            print('Invalid option.Please give another one')
-            continue
-        xtrain = d.return_xtrain(table_x)
-        xtest = d.return_xtest(table_x)
+    #Show first menu and get new table t
+    new_table_t = m.attribute_menu(a,table_t,data)
+
+    #Get new table
+    new_table_x = d.extend_x(table_x)
+
+    #Init training-test sets
+    xtrain = d.return_xtrain(new_table_x)
+    xtest = d.return_xtest(new_table_x)
+    ttrain = d.return_xtrain(new_table_t)
+    ttest = d.return_ttest(new_table_t)
+
