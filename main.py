@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from random import random
 from sklearn.model_selection import train_test_split
+from matplotlib.gridspec import GridSpec
 
 class Plots():
 
@@ -32,14 +33,22 @@ class Plots():
             axs[1].scatter(index,'Choosen class' if guesses[index] == 1 else 'Other class',marker='o', color='red', label='guesses')
         plt.show()
 
-    # def fold_results(self,fold_results,fold_guesses):
-    #     fix, axs = plt.subplots(3,3)
-    #     for i in range(3):
-    #         for y in range(3):
-    #             for index in range(len(fold_guesses[i])):
-    #                 axs[i,y][0].scatter(index,'Choosen class' if fold_results[i][index] == 1 else 'Other class', marker='o', color='blue', label='correct')
-    #                 axs[i,y][1].scatter(index,'Choosen class' if fold_guesses[i][index] == 1 else 'Other class',marker='o', color='red', label='guesses')
-    #     plt.show()
+    def fold_results(self, fold_targets,fold_guesses):
+        fig, axs = plt.subplots(3, 3)
+        for i in range (3):
+            for j in range(len(fold_guesses[i])):
+                axs[0,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
+                axs[0,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
+        for i in range (3):
+            for j in range(len(fold_guesses[i])):
+                axs[1,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
+                axs[1,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
+        for i in range (3):
+            for j in range(len(fold_guesses[i])):
+                axs[2,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
+                axs[2,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
+        plt.legend(['Correct class','Guesses'])
+        plt.show()
 
 class User_Action():
 
@@ -92,16 +101,17 @@ class User_Action():
         perc.train_loop(xtrain,ttrain)
         guesses = perc.get_correct_results(xtest)
         p.show_guessing(ttest,guesses)
-        # print('Now testing with 9 folds')
-        # fold_guesses = []
-        # fold_t = []
-        # for _ in range(9):
-        #     xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
-        #     perc = Perceptron(ans1,ans2)
-        #     perc.train_loop(xtrain,ttrain)
-        #     guesses = perc.get_correct_results(xtest)
-        #     fold_guesses.append(guesses)
-        #     fold_t.append(ttest)
+        print('Now testing with 9 folds')
+        fold_guesses = []
+        fold_t = []
+        for _ in range(9):
+            xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
+            perc2 = Perceptron(ans1,ans2)
+            perc2.train_loop(xtrain,ttrain)
+            guesses = perc2.get_correct_results(xtest)
+            fold_guesses.append(guesses)
+            fold_t.append(ttest)
+        p.fold_results(fold_t,fold_guesses)
 
     def option_2_2(self):
         pass
@@ -221,32 +231,33 @@ class Perceptron:
         self.weights = []
 
         for i in range(5):
-            self.weights.append(random()*10 - 5)
+            self.weights.append(0.0)
+
+    def correction(self,x,target,prediction):
+        new_weights = []
+        for index,weight in enumerate(self.weights):
+            new_weights.append(self.weights[index] + self.beta*(target - prediction) * x[index])
+        return new_weights
 
     def normalize(self,val):
         if val < 0:
-            return 0
+            return 0.0
         else:
-            return 1
+            return 1.0
 
     def guess(self,xtrain):
-        weighted_sum = 0
+        weighted_sum = 0.0
         for i in range(len(xtrain)):
             weighted_sum += xtrain[i]*self.weights[i]
         return self.normalize(weighted_sum)
 
-    def correction(self,x,target,prediction):
-        for index,weight in enumerate(self.weights):
-            weight = weight + self.beta*(target - prediction) * x[index]
-            self.weights[index] = weight
-
     def train_loop(self,xtrain,ttrain):
-        for _ in range(self.epochs):
+        for counter in range(self.epochs):
             flag = True
             for i,x in enumerate(xtrain):
                 g = self.guess(x)
                 if g != ttrain[i]:
-                    self.correction(x,ttrain[i],g)
+                    self.weights = self.correction(x,ttrain[i],g)
                     flag = False
             if flag == True:
                 break
@@ -254,7 +265,7 @@ class Perceptron:
     def get_correct_results(self,xtest):
         guesses = []
         for x in xtest:
-            weighted_sum = 0
+            weighted_sum = 0.0
             for i in range(len(x)):
                 weighted_sum += x[i]*self.weights[i]
             if weighted_sum < 0:
