@@ -26,23 +26,31 @@ class Plots():
         plt.show()
 
     def show_guessing(self,ttrain,guesses):
+        #Init 2 subplots
         fig, axs = plt.subplots(2)
+        #Add title
         fig.suptitle('Correct results vs guesses')
+        #For each item , add it to plot
         for index in range(len(guesses)):
             axs[0].scatter(index,'Choosen class' if ttrain[index] == 1 else 'Other class', marker='o', color='blue', label='correct')
             axs[1].scatter(index,'Choosen class' if guesses[index] == 1 else 'Other class',marker='o', color='red', label='guesses')
+        #Show plot
         plt.show()
 
     def fold_results(self, fold_guesses, fold_targets):
+        #Init 9 subplots
         fig, axs = plt.subplots(3, 3)
+        #For first 3 show items
         for i in range (3):
             for j in range(len(fold_guesses[i])):
                 axs[0,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
                 axs[0,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
+        #For 3 through 6 show items
         for i in range (3):
             for j in range(len(fold_guesses[i])):
                 axs[1,i].scatter(j, np.array(fold_guesses)[i+3][j],c='tab:blue', marker='o')
                 axs[1,i].scatter(j, np.array(fold_targets)[i+3][j],c='tab:red', marker='.')
+        #For 6 to 9 show items
         for i in range (3):
             for j in range(len(fold_guesses[i])):
                 axs[2,i].scatter(j, np.array(fold_guesses)[i+6][j],c='tab:blue', marker='o')
@@ -95,29 +103,41 @@ class User_Action():
         return t
 
     def option_2_1(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
+        #Read inputs
         ans1 = int(input('Give max epochs: '))
         ans2 = float(input('Give a beta value: '))
+        #Init class
         perc = Perceptron(ans1,ans2)
+        #Train class
         perc.train_loop(xtrain,ttrain)
+        #Get results
         guesses = perc.get_correct_results(xtest)
+        #Plot results
         p.show_guessing(ttest,guesses)
+        #Loop for 9 folds
         print('Now testing with 9 folds')
         fold_guesses = []
         fold_t = []
         for _ in range(9):
+            #Get sets
             xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
             perc2 = Perceptron(ans1,ans2)
             perc2.train_loop(xtrain,ttrain)
             guesses = perc2.get_correct_results(xtest)
+            #Append results
             fold_guesses.append(guesses)
             fold_t.append(ttest)
+        #Show results
         p.fold_results(fold_guesses,fold_t)
+        #Proc for return to menu
         return_to_menu()
 
     def option_2_2(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
+        #Read inputs
         ans1 = int(input('Give max epochs: '))
         ans2 = float(input('Give beta value: '))
         ans3 = float(input('Give error limit: '))
+        #Change sets
         for i in range(len(ttrain)):
             if ttrain[i] == 0:
                 ttrain[i] = -1
@@ -133,24 +153,35 @@ class User_Action():
             xtest[i][4] = -1    
         for i in range(len(table_x)):
             table_x[i][4] = -1
+        #Init class
         ad = Adaline(ans1,ans2,ans3)
+        #Train loop
         ad.train_loop(xtrain,ttrain)
+        #Show results
         guesses = ad.get_correct_results(xtest)
+        #Plot results
         p.show_guessing(ttest,guesses)
+        #Test for 9 folds
         print('Now testing with 9 folds')
         fold_guesses = []
         fold_t = []
         for _ in range(9):
+            #Get sets
             xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
             ad2 = Adaline(ans1,ans2,ans3)
             ad2.train_loop(xtrain,ttrain)
             guesses = ad2.get_correct_results(xtest)
+            #Append results
             fold_guesses.append(guesses)
             fold_t.append(ttest)
+        #Show results
         p.fold_results(fold_guesses,fold_t)
+        #Proc for return to menu
         return_to_menu()
 
+    #Least Squares method
     def option_2_3(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
+        #Changes sets
         for i in range(len(ttrain)):
             if ttrain[i] == 0:
                 ttrain[i] = -1
@@ -166,28 +197,39 @@ class User_Action():
             xtest[i][4] = -1    
         for i in range(len(table_x)):
             table_x[i][4] = -1
+        #Init class
         l = LeastSquares()
+        #Get correct weights
         weights = l.get_weights(xtrain,ttrain)
+        #Get predictions
         guesses = l.get_predictions(xtest,weights)
+        #Plot results
         p.show_guessing(ttest,guesses)
+        #Test for 9 folds
         print('Now testing with 9 folds')
         fold_guesses = []
         fold_t = []
         for _ in range(9):
+            #Get sets
             xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
             l2 = LeastSquares()
             weights = l2.get_weights(xtrain,ttrain)
             guesses = l2.get_predictions(xtest,weights)
+            #Append results
             fold_guesses.append(guesses)
             fold_t.append(ttest)
+        #Plot results
         p.fold_results(fold_guesses,fold_t)
+        #Proc for return to menu
         return_to_menu()
 
+    #Go back to manu
     def option_2_4(self):
         run()
 
 class Data():
 
+    #Add 1 to end of patterns
     def extend_x(self,table_x):
         new_table_x = []
         for table in table_x:
@@ -195,6 +237,7 @@ class Data():
             new_table_x.append(new_table)
         return new_table_x
 
+    #Return xtrain
     def return_xtrain(self,table_x):
         #Init arrat
         xtrain = []
@@ -207,6 +250,7 @@ class Data():
             xtrain.extend(table_x[start:end])
         return xtrain
 
+    #Return xtest
     def return_xtest(self,table_x):
         #Init array 
         xtest = []
@@ -219,6 +263,7 @@ class Data():
             xtest.extend(table_x[start:end])
         return xtest
 
+    #Return ttrain
     def return_ttrain(self,table_t):
         #Init arrat
         ttrain = []
@@ -231,6 +276,7 @@ class Data():
             ttrain.extend(table_t[start:end])
         return ttrain
 
+    #Return ttest
     def return_ttest(self,table_t):
         #Init array 
         ttest = []
@@ -243,6 +289,7 @@ class Data():
             ttest.extend(table_t[start:end])
         return ttest
 
+    #Return folds
     def return_splits(self,table_t,table_x):
         xtrain, xtest, ttrain, ttest = train_test_split(table_x, table_t, test_size=0.1)
         return xtrain,xtest,ttrain,ttest
@@ -251,6 +298,7 @@ class Data():
 
 class Menu():
 
+    #Choose class
     def attribute_menu(self,a,table_t,data):
         while True:
             print('1. Seperation of Iris-Setosa\n2. Seperation of Iris-Virginica\n3. Seperation of Iris-Versicolor ')
@@ -267,6 +315,7 @@ class Menu():
             else:
                 print('Invalid option.Please give another one\n')
 
+    #Choose neuron type
     def method_menu(self,a,xtrain,xtest,ttrain,ttest,table_t,table_x):
         while True:
             print('1. Perceptron\n2. Adaline\n3. Method of least squares\n4. Return to main menu')
@@ -289,6 +338,7 @@ class Menu():
 
 class Perceptron:
     
+    #Inint perceptron
     def __init__(self,maxepochs,beta):
         self.epochs = maxepochs
         self.beta = beta
@@ -297,24 +347,28 @@ class Perceptron:
         for i in range(5):
             self.weights.append(1)
 
+    #Correct weights        
     def correction(self,x,target,prediction):
         new_weights = []
         for index,weight in enumerate(self.weights):
             new_weights.append(self.weights[index] + self.beta*(target - prediction) * x[index])
         return new_weights
 
+    #Normalize value
     def normalize(self,val):
         if val < 0:
             return 0.0
         else:
             return 1.0
 
+    #Guess class
     def guess(self,xtrain):
         weighted_sum = 0.0
         for i in range(len(xtrain)):
             weighted_sum += xtrain[i]*self.weights[i]
         return self.normalize(weighted_sum)
 
+    #Train the neuron
     def train_loop(self,xtrain,ttrain):
         for counter in range(self.epochs):
             flag = True
@@ -326,6 +380,7 @@ class Perceptron:
             if flag == True:
                 break
 
+    #Return guesses
     def get_correct_results(self,xtest):
         guesses = []
         for x in xtest:
@@ -340,6 +395,7 @@ class Perceptron:
 
 class Adaline:
 
+    #Initialize adaline
     def __init__(self,maxepochs,beta,limit):
         self.epochs = maxepochs
         self.limit = limit
@@ -347,37 +403,35 @@ class Adaline:
         self.weights = []
 
         for i in range(5):
-            self.weights.append(0.2)
+            self.weights.append(0.5)
 
+    #Correct weights
     def correction(self,x,target,prediction):
         new_weights = []
         for index,weight in enumerate(self.weights):
             new_weights.append(self.weights[index] + self.beta*(target - prediction) * x[index])
         return new_weights
 
-    def normalize(self,val):
-        if val < 0:
-            return -1.0
-        else:
-            return 1.0
+    #Get sum
+    def get_sum(self,x):
+        summary = 0
+        for i in range(len(x)):
+            summary += self.weights[i]*x[i]
+        return summary
 
-    def guess(self,xtrain):
-        weighted_sum = 0.0
-        for i in range(len(xtrain)):
-            weighted_sum += xtrain[i]*self.weights[i]
-        return self.normalize(weighted_sum)
-
+    #Train the neuron
     def train_loop(self,xtrain,ttrain):
         for counter in range(self.epochs):
             sqrs = 0
             for i,x in enumerate(xtrain):
-                g = self.guess(x)
-                sqrs += pow((ttrain[i] - g ),2)
-                self.weights = self.correction(x,ttrain[i],g)
+                summary = self.get_sum(x)
+                sqrs += pow((ttrain[i] - summary ),2)
+                self.weights = self.correction(x,ttrain[i],summary)
             error = sqrs / 2
             if error <= self.limit:
                 break
 
+    #Get the guesses
     def get_correct_results(self,xtest):
         guesses = []
         for x in xtest:
@@ -393,7 +447,8 @@ class Adaline:
             
 
 class LeastSquares:
-    
+
+    #Get correct weight
     def get_weights(self,xtrain,ttrain):
         xt = []
         for item in xtrain:
@@ -406,18 +461,21 @@ class LeastSquares:
         nx = np.asarray(x)
         return t.dot(np.transpose(nx))
 
+    #Normalize value
     def normalize(self,val):
         if val < 0:
             return -1.0
         else:
             return 1.0
 
+    #Find guess and return normalized value
     def guess(self,xtrain,weights):
         weighted_sum = 0.0
         for i in range(len(xtrain)):
             weighted_sum += xtrain[i]*weights[i]
         return self.normalize(weighted_sum)
 
+    #Get predictions
     def get_predictions(self,xtest,weights):
         predictions = []
         for index in range(len(xtest)):
@@ -451,11 +509,13 @@ def run():
     #Show plot of training and test set
     p.train_test(xtrain,xtest)
 
+    #Open menu for neuron type
     m.method_menu(a,xtrain,xtest,ttrain,ttest,new_table_t,new_table_x)
 
 
 def return_to_menu():
-    yes = ['y','yes','Yes','YES']
+    #Menu options
+    yes = ['y','Υ','yes','Yes','YES']
     ans = input('Do you want to continue?[y,n] ')
     if ans in yes:
         run()
