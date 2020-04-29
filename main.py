@@ -112,6 +112,7 @@ class User_Action():
             fold_guesses.append(guesses)
             fold_t.append(ttest)
         p.fold_results(fold_guesses,fold_t)
+        return_to_menu()
 
     def option_2_2(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
         ans1 = int(input('Give max epochs: '))
@@ -147,12 +148,43 @@ class User_Action():
             fold_guesses.append(guesses)
             fold_t.append(ttest)
         p.fold_results(fold_guesses,fold_t)
+        return_to_menu()
 
-    def option_2_3(self):
-        pass
+    def option_2_3(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
+        for i in range(len(ttrain)):
+            if ttrain[i] == 0:
+                ttrain[i] = -1
+        for i in range(len(ttest)):
+            if ttest[i] == 0:
+                ttest[i] = -1
+        for i in range(len(table_t)):
+            if table_t[i] == 0:
+                table_t[i] = -1
+        for i in range(len(xtrain)):
+            xtrain[i][4] = -1
+        for i in range(len(xtest)):
+            xtest[i][4] = -1    
+        for i in range(len(table_x)):
+            table_x[i][4] = -1
+        l = LeastSquares()
+        weights = l.get_weights(xtrain,ttrain)
+        guesses = l.get_predictions(xtest,weights)
+        p.show_guessing(ttest,guesses)
+        print('Now testing with 9 folds')
+        fold_guesses = []
+        fold_t = []
+        for _ in range(9):
+            xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
+            l2 = LeastSquares()
+            weights = l2.get_weights(xtrain,ttrain)
+            guesses = l2.get_predictions(xtest,weights)
+            fold_guesses.append(guesses)
+            fold_t.append(ttest)
+        p.fold_results(fold_guesses,fold_t)
+        return_to_menu()
 
     def option_2_4(self):
-        pass
+        run()
 
 class Data():
 
@@ -246,7 +278,7 @@ class Menu():
                 a.option_2_2(xtrain,xtest,ttrain,ttest,table_t,table_x)
                 break
             elif opt == 3:
-                a.option_2_3()
+                a.option_2_3(xtrain,xtest,ttrain,ttest,table_t,table_x)
                 break
             elif opt == 4:
                 a.option_2_4()
@@ -334,12 +366,6 @@ class Adaline:
         for i in range(len(xtrain)):
             weighted_sum += xtrain[i]*self.weights[i]
         return self.normalize(weighted_sum)
-        
-    def sum(self,xtrain):
-        weighted_sum = 0.0
-        for i in range(len(xtrain)):
-            weighted_sum += xtrain[i]*self.weights[i]
-        return weighted_sum
 
     def train_loop(self,xtrain,ttrain):
         for counter in range(self.epochs):
@@ -349,7 +375,6 @@ class Adaline:
                 sqrs += pow((ttrain[i] - g ),2)
                 self.weights = self.correction(x,ttrain[i],g)
             error = sqrs / 2
-            print(f'error: {error}, counter: {counter} , sqr: {sqrs}')
             if error <= self.limit:
                 break
 
@@ -368,8 +393,36 @@ class Adaline:
             
 
 class LeastSquares:
-    pass
+    
+    def get_weights(self,xtrain,ttrain):
+        xt = []
+        for item in xtrain:
+            temp = []
+            for nump in item:
+                temp.append(nump)
+            xt.append(temp)
+        x = np.linalg.pinv(xt)
+        t = np.asarray(ttrain)
+        nx = np.asarray(x)
+        return t.dot(np.transpose(nx))
 
+    def normalize(self,val):
+        if val < 0:
+            return -1.0
+        else:
+            return 1.0
+
+    def guess(self,xtrain,weights):
+        weighted_sum = 0.0
+        for i in range(len(xtrain)):
+            weighted_sum += xtrain[i]*weights[i]
+        return self.normalize(weighted_sum)
+
+    def get_predictions(self,xtest,weights):
+        predictions = []
+        for index in range(len(xtest)):
+            predictions.append(self.guess(xtest[index],weights))
+        return predictions
 
 def load_data():
     #Get irish data
@@ -378,6 +431,12 @@ def load_data():
     return data.values # return data
 
 def run():
+     #Init table x
+    table_x = data[:, [0,1,2,3]] # keep only columns 1 2 and 3 from dataset
+
+    #Init table t
+    table_t = np.zeros(number_of_patterns) # fill array with zeros
+
     #Show first menu and get new table t
     new_table_t = m.attribute_menu(a,table_t,data)
     #Get new table
@@ -395,28 +454,25 @@ def run():
     m.method_menu(a,xtrain,xtest,ttrain,ttest,new_table_t,new_table_x)
 
 
+def return_to_menu():
+    yes = ['y','yes','Yes','YES']
+    ans = input('Do you want to continue?[y,n] ')
+    if ans in yes:
+        run()
 
 
 if __name__ == '__main__':
-
-    data = load_data() # load data
-    number_of_patterns, number_of_attributes = data.shape # get the rows and columns
-    print(f'Number of patters: {number_of_patterns}\nNumber of attributes: {number_of_attributes}') # print row and columns
-
     #Initialize classes
     p = Plots()
     d = Data()
     a = User_Action()
     m = Menu()
 
-    #Init table x
-    table_x = data[:, [0,1,2,3]] # keep only columns 1 2 and 3 from dataset
-
+    data = load_data() # load data
+    number_of_patterns, number_of_attributes = data.shape # get the rows and columns
+    print(f'Number of patters: {number_of_patterns}\nNumber of attributes: {number_of_attributes}') # print row and columns
     #Print basic plot
     p.basic_data(data) # print plot of all data
-
-    #Init table t
-    table_t = np.zeros(number_of_patterns) # fill array with zeros
+    
 
     run()
-   
