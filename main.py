@@ -33,7 +33,7 @@ class Plots():
             axs[1].scatter(index,'Choosen class' if guesses[index] == 1 else 'Other class',marker='o', color='red', label='guesses')
         plt.show()
 
-    def fold_results(self, fold_targets,fold_guesses):
+    def fold_results(self, fold_guesses, fold_targets):
         fig, axs = plt.subplots(3, 3)
         for i in range (3):
             for j in range(len(fold_guesses[i])):
@@ -41,13 +41,13 @@ class Plots():
                 axs[0,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
         for i in range (3):
             for j in range(len(fold_guesses[i])):
-                axs[1,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
-                axs[1,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
+                axs[1,i].scatter(j, np.array(fold_guesses)[i+3][j],c='tab:blue', marker='o')
+                axs[1,i].scatter(j, np.array(fold_targets)[i+3][j],c='tab:red', marker='.')
         for i in range (3):
             for j in range(len(fold_guesses[i])):
-                axs[2,i].scatter(j, np.array(fold_guesses)[i][j],c='tab:blue', marker='o')
-                axs[2,i].scatter(j, np.array(fold_targets)[i][j],c='tab:red', marker='.')
-        plt.legend(['Correct class','Guesses'])
+                axs[2,i].scatter(j, np.array(fold_guesses)[i+6][j],c='tab:blue', marker='o')
+                axs[2,i].scatter(j, np.array(fold_targets)[i+6][j],c='tab:red', marker='.')
+        plt.legend(['Guesses','Correct class'])
         plt.show()
 
 class User_Action():
@@ -111,10 +111,42 @@ class User_Action():
             guesses = perc2.get_correct_results(xtest)
             fold_guesses.append(guesses)
             fold_t.append(ttest)
-        p.fold_results(fold_t,fold_guesses)
+        p.fold_results(fold_guesses,fold_t)
 
-    def option_2_2(self):
-        pass
+    def option_2_2(self,xtrain,xtest,ttrain,ttest,table_t,table_x):
+        ans1 = int(input('Give max epochs: '))
+        ans2 = float(input('Give beta value: '))
+        ans3 = float(input('Give error limit: '))
+        for i in range(len(ttrain)):
+            if ttrain[i] == 0:
+                ttrain[i] = -1
+        for i in range(len(ttest)):
+            if ttest[i] == 0:
+                ttest[i] = -1
+        for i in range(len(table_t)):
+            if table_t[i] == 0:
+                table_t[i] = -1
+        for i in range(len(xtrain)):
+            xtrain[i][4] = -1
+        for i in range(len(xtest)):
+            xtest[i][4] = -1    
+        for i in range(len(table_x)):
+            table_x[i][4] = -1
+        ad = Adaline(ans1,ans2,ans3)
+        ad.train_loop(xtrain,ttrain)
+        guesses = ad.get_correct_results(xtest)
+        p.show_guessing(ttest,guesses)
+        print('Now testing with 9 folds')
+        fold_guesses = []
+        fold_t = []
+        for _ in range(9):
+            xtrain,xtest,ttrain,ttest = d.return_splits(table_t,table_x)
+            ad2 = Adaline(ans1,ans2,ans3)
+            ad2.train_loop(xtrain,ttrain)
+            guesses = ad2.get_correct_results(xtest)
+            fold_guesses.append(guesses)
+            fold_t.append(ttest)
+        p.fold_results(fold_guesses,fold_t)
 
     def option_2_3(self):
         pass
@@ -211,7 +243,7 @@ class Menu():
                 a.option_2_1(xtrain,xtest,ttrain,ttest,table_t,table_x)
                 break
             elif opt == 2:
-                a.option_2_2()
+                a.option_2_2(xtrain,xtest,ttrain,ttest,table_t,table_x)
                 break
             elif opt == 3:
                 a.option_2_3()
@@ -231,7 +263,7 @@ class Perceptron:
         self.weights = []
 
         for i in range(5):
-            self.weights.append(0.0)
+            self.weights.append(1)
 
     def correction(self,x,target,prediction):
         new_weights = []
@@ -275,7 +307,65 @@ class Perceptron:
         return guesses
 
 class Adaline:
-    pass
+
+    def __init__(self,maxepochs,beta,limit):
+        self.epochs = maxepochs
+        self.limit = limit
+        self.beta = beta
+        self.weights = []
+
+        for i in range(5):
+            self.weights.append(0.2)
+
+    def correction(self,x,target,prediction):
+        new_weights = []
+        for index,weight in enumerate(self.weights):
+            new_weights.append(self.weights[index] + self.beta*(target - prediction) * x[index])
+        return new_weights
+
+    def normalize(self,val):
+        if val < 0:
+            return -1.0
+        else:
+            return 1.0
+
+    def guess(self,xtrain):
+        weighted_sum = 0.0
+        for i in range(len(xtrain)):
+            weighted_sum += xtrain[i]*self.weights[i]
+        return self.normalize(weighted_sum)
+        
+    def sum(self,xtrain):
+        weighted_sum = 0.0
+        for i in range(len(xtrain)):
+            weighted_sum += xtrain[i]*self.weights[i]
+        return weighted_sum
+
+    def train_loop(self,xtrain,ttrain):
+        for counter in range(self.epochs):
+            sqrs = 0
+            for i,x in enumerate(xtrain):
+                g = self.guess(x)
+                sqrs += pow((ttrain[i] - g ),2)
+                self.weights = self.correction(x,ttrain[i],g)
+            error = sqrs / 2
+            print(f'error: {error}, counter: {counter} , sqr: {sqrs}')
+            if error <= self.limit:
+                break
+
+    def get_correct_results(self,xtest):
+        guesses = []
+        for x in xtest:
+            weighted_sum = 0.0
+            for i in range(len(x)):
+                weighted_sum += x[i]*self.weights[i]
+            if weighted_sum < 0:
+                guesses.append(-1.0)
+            else:
+                guesses.append(1.0)
+        return guesses
+
+            
 
 class LeastSquares:
     pass
